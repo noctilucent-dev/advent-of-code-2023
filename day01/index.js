@@ -1,4 +1,4 @@
-let { DEBUG, raw,  log} = require("../util");
+let { DEBUG, raw } = require("../util");
 
 if (DEBUG) {
     raw = `two1nine
@@ -11,20 +11,16 @@ if (DEBUG) {
 }
 
 function part1(lines) {
-    let sum = 0;
-    lines.forEach(line => {
-        const digits = line.replace(/[^\d]/g,'');
-        const first = digits[0];
-        const last = digits[digits.length-1];
-        log(`${first}${last}`);
-        sum += Number(`${first}${last}`);
-    });
-    return sum;
+    return lines
+        .map(line => line.replace(/[^\d]/g,''))
+        .map(line => Number(`${line[0]}${line[line.length-1]}`))
+        .reduce((p, c) => p + c);
 }
 
 function part2(lines) {
     const words = [
-        '___',
+        ...'0123456789'.split(''),
+        'zero',
         'one',
         'two',
         'three',
@@ -35,29 +31,19 @@ function part2(lines) {
         'eight',
         'nine'
     ];
-    let sum = 0;
-    lines.forEach(line => {
-        let digits = [];
-        for(let i=0; i<line.length; i++) {
-            if (!isNaN(Number(line[i]))) {
-                digits.push(Number(line[i]));
-                continue;
-            }
-            const wordIndex = words.findIndex(w => line.slice(i).startsWith(w));
-            if (wordIndex >= 0) {
-                digits.push(wordIndex);
-            }
-        }
-        log(digits);
-        sum += (digits[0] * 10) + digits[digits.length-1];
-    });
+    const lineToDigits = (line) => {
+        return line.split('')
+            .map((c, i) => words.findIndex(w => line.slice(i).startsWith(w)) % 10)
+            .filter(i => i > -1);
+    };
 
-    return sum;
+    return lines
+        .map(lineToDigits)
+        .map(d => (d[0] * 10) + d.pop())
+        .reduce((p, c) => p+c);
 }
 
 const lines = raw.trim().split('\n').map(l => l.trim());
 
 console.log(part1(lines));
 console.log(part2(lines));
-
-// 55929 too high
