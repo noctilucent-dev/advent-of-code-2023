@@ -1,4 +1,4 @@
-let { DEBUG, raw, log } = require("../util");
+let { DEBUG, raw } = require("../util");
 
 if (DEBUG) {
     raw = `Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
@@ -8,11 +8,29 @@ if (DEBUG) {
     Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green`;
 }
 
+/**
+ * Parses a single line from input and returns structured data.
+ * e.g.
+ * {
+ *   gameNumber: 1,
+ *   rounds: [{
+ *     red: 1,
+ *     blue: 2,
+ *     green: 3
+ *   }, {
+ *     red: 9,
+ *     blue: 10,
+ *     green: 0
+ *   }]
+ * }
+ */
 function parseLine(line) {
-    const [game, rest] = line.split(':');
+    const [game, rest] = line.split(': ');
     const gameNumber = game.slice(5) * 1;
+
     const rounds = rest.trim().split('; ').map(r => {
         const balls = r.trim().split(', ');
+        // Note - colours default to zero if no balls picked in round
         const counts = {
             red: 0,
             green: 0,
@@ -24,7 +42,6 @@ function parseLine(line) {
         });
         return counts;
     });
-    log(`Parsed game ${gameNumber} - rounds: ${JSON.stringify(rounds)}`);
 
     return {
         gameNumber,
@@ -32,47 +49,43 @@ function parseLine(line) {
     };
 }
 
-function part1(lines) {
-    const games = lines.map(parseLine);
-    const validGames = games.filter(g => {
-        const maxValues = {
-            red: 0,
-            green: 0,
-            blue: 0
-        };
-        g.rounds.forEach(r => {
-            maxValues.red = Math.max(maxValues.red, r.red);
-            maxValues.green = Math.max(maxValues.green, r.green);
-            maxValues.blue = Math.max(maxValues.blue, r.blue);
-        });
-        log(`Game ${g.gameNumber} has max ${maxValues.red} red, ${maxValues.green} green, ${maxValues.blue} blue`);
+/**
+ * Calculates the maximum number of balls of each colour from any of the specified rounds.
+ */
+function calculateMaxValues(rounds) {
+    return rounds.reduce((p, c) => ({
+        red: Math.max(p.red, c.red),
+        blue: Math.max(p.blue, c.blue),
+        green: Math.max(p.green, c.green)
+    }));
+}
 
-        return maxValues.red <= 12 && maxValues.green <= 13 && maxValues.blue <= 14;
-    });
-    return validGames.reduce((p, c) => p + c.gameNumber, 0);
+function part1(lines) {
+    return lines
+        .map(parseLine)
+        // Filter out any games where max ball count exceeds limit
+        .filter(g => {
+            const maxValues = calculateMaxValues(g.rounds);
+            return maxValues.red <= 12 && maxValues.green <= 13 && maxValues.blue <= 14
+        })
+        // Sum the remaining game numbers
+        .map(g => g.gameNumber)
+        .reduce((p, c) => p + c);
 }
 
 function part2(lines) {
-    const games = lines.map(parseLine);
-    const powers = games.map(g => {
-        const maxValues = {
-            red: 0,
-            green: 0,
-            blue: 0
-        };
-        g.rounds.forEach(r => {
-            maxValues.red = Math.max(maxValues.red, r.red);
-            maxValues.green = Math.max(maxValues.green, r.green);
-            maxValues.blue = Math.max(maxValues.blue, r.blue);
-        });
-        log(`Game ${g.gameNumber} has max ${maxValues.red} red, ${maxValues.green} green, ${maxValues.blue} blue`);
-
-        return maxValues.red * maxValues.green * maxValues.blue;
-    });
-    return powers.reduce((p, c) => p + c, 0);
+    return lines
+        .map(parseLine)
+        // Calculate the 'power' of each game using the ball counts
+        .map(g => {
+            const maxValues = calculateMaxValues(g.rounds);
+            return maxValues.red * maxValues.green * maxValues.blue;
+        })
+        // Sum the powers
+        .reduce((p, c) => p + c);
 }
 
-const lines = raw.trim().split('\n').map(l => l.trim()).filter(l => l !== '');
+const lines = raw.trim().split('\n').map(l => l.trim());
 
 console.log(part1(lines));
 console.log(part2(lines));
