@@ -13,12 +13,22 @@ if (DEBUG) {
 .664.598..`;
 }
 
+/**
+ * Parses the lines and returns arrays of numbers and symbols.
+ * Each number defines its value and start/end coordinates (top left = [0,0]).
+ * Each symbol defines its value and position.
+ */
 function parse(lines) {
     const numbers = [];
     const symbols = [];
 
+    // Iterate over rows
     for (let y=0; y<lines.length; y++) {
+        // Store the number we are currently parsing
+        // Important - reset to undefined after number completed
         let number = undefined;
+
+        // Convenience function to add number to array and reset
         const pushNumber = () => {
             number.value = Number(number.value);
             numbers.push(number);
@@ -26,8 +36,11 @@ function parse(lines) {
             number = undefined;
         };
 
+        // Iterate over characters
         for (let x=0; x<lines[y].length; x++) {
             const c = lines[y][x];
+
+            // Check if we've reached the end of a number
             if (isNaN(Number(c)) && number) {
                 pushNumber();
             }
@@ -35,7 +48,10 @@ function parse(lines) {
             if (c === '.') {
                 continue;
             }
+
+            // Check if a digit
             if (!isNaN(Number(c))) {
+                // Either start a new number or continue existing
                 if (number) {
                     number.value += c;
                     number.end[0]++;
@@ -47,6 +63,7 @@ function parse(lines) {
                     }
                 }
             } else {
+                // Must be a symbol - so add to array
                 const symbol = {
                     value: c,
                     position: [x, y]
@@ -56,6 +73,7 @@ function parse(lines) {
             }
         }
 
+        // Check for a number that went to the end of the line
         if (number) {
             pushNumber();
         }
