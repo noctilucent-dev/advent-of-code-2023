@@ -9,8 +9,11 @@ if (DEBUG) {
     Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11`;
 }
 
+/**
+ * Parses an input line into two arrays of numbers - winners and chosen.
+ */
 function parse(line) {
-    const [start, rest] = line.split(/:\s+/);
+    const [_, rest] = line.split(/:\s+/);
     let [winners, chosen] = rest.split(' | ');
     winners = winners.trim().split(/\s+/).map(Number);
     chosen = chosen.trim().split(/\s+/).map(Number);
@@ -20,54 +23,56 @@ function parse(line) {
     };
 }
 
-function scoreGame(winners, chosen) {
+/**
+ * Calculates the count of matching numbers and score for the specified card.
+ */
+function scoreCard(winners, chosen) {
     winners = new Set(winners);
-    const matching = chosen.filter(n => winners.has(n));
-    if (matching.length === 0) {
-        return {
-            matches: 0,
-            score: 0
-        };
-    }
+    const matches = chosen.filter(n => winners.has(n)).length;
 
     return {
-        matches: matching.length,
-        score: Math.pow(2, matching.length - 1)
+        matches,
+        score: matches ? Math.pow(2, matches - 1) : 0
     };
 }
 
 function part1(lines) {
+    // Sum the score for each card
     return lines.reduce((p, line) => {
         let { winners, chosen } = parse(line);
         log(winners);
         log(chosen);
-        return scoreGame(winners, chosen).score + p;
+        return scoreCard(winners, chosen).score + p;
     }, 0);
 }
 
 function part2(lines) {
-    const games = lines.map(parse);
-    const scores = games.map(({winners, chosen}) => {
-        const {matches, score} = scoreGame(winners, chosen);
+    // Parse cards and track the number of copies of each
+    const cards = lines.map(parse).map(({winners, chosen}) => {
+        const {matches} = scoreCard(winners, chosen);
         return {
             matches,
-            score,
             copies: 1
         }
     });
-    log(scores);
-    for(let i=0; i<scores.length; i++) {
-        log(`Updating for game ${i+1}`);
+    log(cards);
 
-        for (let j=0; j<scores[i].matches; j++) {
-            log(`Adding ${scores[i].copies} copies for game ${i+j+1+1}`);
-            scores[i+j+1].copies += scores[i].copies;
+    // Iterate over each card, adding subsequent copies
+    for(let i=0; i<cards.length; i++) {
+        log(`Updating for card ${i+1}`);
+
+        // Add copies of subsequent cards
+        // Note -  number of copies depends on copies of this card
+        for (let j=0; j<cards[i].matches; j++) {
+            log(`Adding ${cards[i].copies} copies for card ${i+j+1+1}`);
+            cards[i+j+1].copies += cards[i].copies;
         }
         
-        log(scores);
+        log(cards);
     }
-    
-    return scores.reduce((p, c) => p + c.copies, 0);
+
+    // Sum all the copies
+    return cards.reduce((p, c) => p + c.copies, 0);
 }
 
 const lines = raw.trim().split('\n').map(l => l.trim());
