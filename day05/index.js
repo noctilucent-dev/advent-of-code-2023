@@ -97,6 +97,9 @@ function part1(lines) {
     return locations.reduce((p, c) => Math.min(p, c));
 }
 
+/**
+ * Recursively search for the minimum location from this point
+ */
 function getMinLocation(minSeed, maxSeed, tierIndex, tiers, depth = 0) {
     const indent = '                                       '.substring(0, depth * 2);
     if (tierIndex >= tiers.length) {
@@ -108,9 +111,13 @@ function getMinLocation(minSeed, maxSeed, tierIndex, tiers, depth = 0) {
     const tier = tiers[tierIndex];
     const locations = [];
 
+    // Go through each range of seed values
     while(minSeed < maxSeed) {
+        // Find the next-lowest mapping
+        // Note - we have pre-sorted the mappings
         const nextMapping = tier.mappings.find(m => m.sourceEnd >= minSeed);
         if (!nextMapping) {
+            // No more mappings, so skip to next tier and break out of the loop
             locations.push(
                 getMinLocation(
                     minSeed,
@@ -124,6 +131,8 @@ function getMinLocation(minSeed, maxSeed, tierIndex, tiers, depth = 0) {
         }
 
         if (nextMapping.sourceStart > minSeed) {
+            // There's a gap before the next-lowest mapping
+            // so fork here for the gap
             locations.push(
                 getMinLocation(
                     minSeed,
@@ -135,6 +144,7 @@ function getMinLocation(minSeed, maxSeed, tierIndex, tiers, depth = 0) {
             );
         }
 
+        // Fork for the next-lowest mapping
         locations.push(
             getMinLocation(
                 Math.max(minSeed, nextMapping.sourceStart) + nextMapping.delta,
@@ -145,23 +155,29 @@ function getMinLocation(minSeed, maxSeed, tierIndex, tiers, depth = 0) {
             )
         );
 
+        // Shift the starting range for the next loop
         minSeed = Math.min(maxSeed, nextMapping.sourceEnd) + 1;
     }
 
+    // Get the minimum of all found locations
     return locations.reduce((p, c) => Math.min(p, c), Number.MAX_VALUE);
 }
 
 function part2(lines) {
     const {seeds, tiers} = parse(lines);
     
+    // Calculate end of range and delta for every mapping
     tiers.forEach(t => t.mappings.forEach(m => {
         m.delta = m.destinationStart - m.sourceStart;
         m.sourceEnd = m.sourceStart + m.range - 1;
     }));
+
+    // Sort all mappings by source start
     tiers.forEach(tier => tier.mappings.sort((a, b) => a.sourceStart - b.sourceStart));
 
     const locations = [];
 
+    // Calculate the minimum location for each seed
     for(let i=0; i<seeds.length; i += 2) {
         const seed = seeds[i];
         const seedRange = seeds[i+1];
@@ -171,6 +187,7 @@ function part2(lines) {
 
     log(locations);
 
+    // Return the minimum location
     return locations.reduce((p, c) => Math.min(p, c));
 }
 
