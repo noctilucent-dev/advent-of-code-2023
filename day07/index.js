@@ -17,30 +17,45 @@ function parse(line) {
     };
 }
 
-function hash(cards, cardRank) {
+/**
+ * Creates a hash of the specified hand of cards.
+ * Uses the specified cardRank to ensure the hashes
+ * are sortable by 'highest card' rule.
+ */
+function calculateOrderedHash(cards, cardRank) {
     return cards
         .split('')
         .map(c => cardRank.indexOf(c))
         .reduce((p, c) => (p*cardRank.length) + c, 0);
 }
 
-function getType(cards) {
-    const sorted = [...cards].sort((a, b) => a.localeCompare(b));
-    log(sorted);
-    const runs = [];
-    for (let i=1, c=1; i<=sorted.length; i++) {
-        if (sorted[i] !== sorted[i-1]) {
-            runs.push(c);
-            c = 1;
-        } else {
-            c++;
-        }
-    }
-    runs.sort((a, b) => b-a);
-    log(runs);
+/**
+ * Calculates the frequency of each unique card in the specified hand.
+ * Ordered by most to least frequent.
+ */
+function getFrequencies(cards) {
+    const arr = cards.split('');
+    const uniqueCards = Array.from(new Set(arr));
 
+    return uniqueCards.map(card => ({
+        card,
+        count: arr.filter(a => a === card).length
+    })).sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Gets the type (number) of hand from the specified cards.
+ * The best type has a value of 6, the worst 0.
+ */
+function getType(cards) {
+    log(`Calculating hand type for ${cards}`);
+
+    // Get an ordered list of card runs (longest to shortest)
+    const runs = getFrequencies(cards).map(c => c.count);
+    log(`Card runs: ${runs}`);
+    
+    // Array of names - just for debug purposes
     const typeNames = [
-        '',
         'High Card',
         'Pair',
         'Two Pair',
@@ -50,21 +65,22 @@ function getType(cards) {
         'Five of a kind'
     ];
 
-    let type = 1;
+    // Lookup the type based on the card runs
+    let type;
     if (runs[0] === 5) {
-        type = 7;
-    } else if (runs[0] === 4) {
         type = 6;
-    } else if (runs[0] === 3 && runs[1] === 2) {
+    } else if (runs[0] === 4) {
         type = 5;
-    } else if (runs[0] === 3) {
+    } else if (runs[0] === 3 && runs[1] === 2) {
         type = 4;
-    } else if (runs[0] === 2 && runs[1] === 2) {
+    } else if (runs[0] === 3) {
         type = 3;
-    } else if (runs[0] === 2) {
+    } else if (runs[0] === 2 && runs[1] === 2) {
         type = 2;
-    } else {
+    } else if (runs[0] === 2) {
         type = 1;
+    } else {
+        type = 0;
     }
 
     log(`${cards}: ${typeNames[type]}`);
@@ -72,49 +88,74 @@ function getType(cards) {
     return type;
 }
 
-function score(cards) {
-    const cardRank = '23456789TJQKA'.split('');
-    const type = getType(cards);
-    let s = hash(cards, cardRank);
-    return (type * Math.pow(13, 5)) + s;
-}
-
+/**
+ * Calculates the best type avilable taking into account wildcards.
+ */
 function getBestType(cards) {
-    if (cards === 'JJJJJ') cards = 'AAAAA';
+    log(`Getting best type for ${cards}`);
 
-    log(`Getting best type from ${cards}`);
-    if (cards.indexOf('J') === -1) {
-        return getType(cards);
+    // Work out the best replacement for jokers, if any
+    if (cards.indexOf('J') > -1) {
+        // Get all card frequencies, ignoring jokers
+        const frequencies = getFrequencies(cards).filter(f => f.card !== 'J');
+
+        // Handle the case of only jokers
+        if (frequencies.length === 0) {
+            return 6;
+        }
+
+        log(`Replacing jokers with ${frequencies[0].card}`);
+
+        // Replace all jokers with the most frequent card
+        cards = cards.replace(/J/g,frequencies[0].card);
     }
 
-    let options = Array.from(new Set(cards.replace(/J/g,'').split('')));
-    return options
-        .map(o => {
-            const newCards = cards.replace('J',o);
-            return getBestType(newCards);
-        })
-        .reduce((p, c) => Math.max(p, c), 0);
-}
-
-function score2(cards) {
-    const cardRank = 'J23456789TQKA'.split('');
-    const o = getBestType(cards);
-    return (o * Math.pow(13, 5)) + hash(cards, cardRank);
+    return getType(cards);
 }
 
 function part1(lines) {
+    const cardRank = '23456789TJQKA'.split('');
     const hands = lines.map(parse);
-    hands.forEach(h => h.score = score(h.cards)); 
+
+    // Score each hand, such that a hand with a higher score always beats a hand
+    // with a lower score.
+    hands.forEach(h => {
+        const type = getType(h.cards);
+        const hash = calculateOrderedHash(h.cards, cardRank);
+
+        // A single score can be calculated from the sum of:
+        // - the type, multiplied by the highest hash value; and,
+        // - the hash.
+        h.score = (type * Math.pow(13, 5)) + hash;
+    }); 
+    
+    // Sort the hands by score
     hands.sort((a, b) => a.score - b.score);
+    log(`Scored, sorted hands:`);
     log(hands);
+
+    // Caluclate total winnings
     return hands.map((h, i) => h.bid * (i+1)).reduce((p,c) => p+c);
 }
 
 function part2(lines) {
+    // Modified card rank for the hash
+    const cardRank = 'J23456789TQKA'.split('');
     const hands = lines.map(parse);
-    hands.forEach(h => h.score = score2(h.cards)); 
+
+    // As with part1, but with a different function for getting the type
+    hands.forEach(h => {
+        const type = getBestType(h.cards);
+        const hash = calculateOrderedHash(h.cards, cardRank);
+
+        h.score = (type * Math.pow(13, 5)) + hash;
+    }); 
+
+    // We can take exactly the same approach now to calculate the total winnings
     hands.sort((a, b) => a.score - b.score);
+    log(`Scored, sorted hands:`);
     log(hands);
+
     return hands.map((h, i) => h.bid * (i+1)).reduce((p,c) => p+c);
 }
 
