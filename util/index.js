@@ -49,11 +49,47 @@ function recursiveCompare(obj, reference){
     return true; //Every object and array is equal
 }
 
+/**
+ * Calculates the frequency of items in an array.
+ * @param {T[]} arr array of primitives
+ * @returns {[{ value: T, count: Number }]} Array of value/frequency pairs
+ */
+function getFrequencies(arr) {
+    const uniqueValues = Array.from(new Set(arr));
+
+    return uniqueCards.map(value => ({
+        value,
+        count: arr.filter(a => a === value).length
+    })).sort((a, b) => b.count - a.count);
+}
+
+
+function lcm(...numbers) {
+  // Helper function to calculate the Greatest Common Divisor (GCD) of two numbers
+  function gcd(a, b) {
+    return !b ? a : gcd(b, a % b);
+  }
+
+  // Helper function to calculate the LCM of two numbers
+  function lcmTwoNumbers(a, b) {
+    return (a * b) / gcd(a, b);
+  }
+
+  // Calculate LCM of multiple numbers
+  let result = numbers[0];
+  for (let i = 1; i < numbers.length; i++) {
+    result = lcmTwoNumbers(result, numbers[i]);
+  }
+  return result;
+}
+
 module.exports = {
     constrain,
     raw,
     DEBUG,
     log,
     deepClone,
-    recursiveCompare
+    recursiveCompare,
+    getFrequencies,
+    lcm
 };

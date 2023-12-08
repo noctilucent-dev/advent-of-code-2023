@@ -1,4 +1,4 @@
-let { DEBUG, raw, getTrimmedLines, lcm, log } = require("../util");
+let { DEBUG, raw, lcm, log } = require("../util");
 
 if (DEBUG) {
     raw = `0 3 6 9 12 15
