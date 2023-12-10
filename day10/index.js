@@ -25,7 +25,7 @@ if (DEBUG) {
     ....L---J.LJ.LJLJ...`;
 }
 
-function part1(lines) {
+function parse(lines) {
     const nodes = {};
     let start;
     for(let y=0; y<lines.length; y++) {
@@ -37,9 +37,7 @@ function part1(lines) {
             const south = JSON.stringify([x, y+1]);
             const west = JSON.stringify([x-1, y]);
 
-            if (c === '.') {
-                continue;
-            } else if (c === 'S') {
+            if (c === 'S') {
                 start = here;
             } else if (c === '-') {
                 nodes[here] = [
@@ -75,95 +73,22 @@ function part1(lines) {
         }
     }
 
-    log(start);
-    log(nodes);
-
     const adjacent = Object.getOwnPropertyNames(nodes).filter(k => {
         return nodes[k].find(n => n === start);
     });
-    log(adjacent);
 
     nodes[start] = adjacent;
 
-    const path = [];
-    let previous;
-    let current = start;
-    while(true) {
-        path.push(current);
-        const next = nodes[current].find(n => n !== previous);
-        previous = current;
-        current = next;
-        if (current === start) {
-            break;
-        }
-        log(path);
-    }
+    log(nodes);
+    log(start);
 
-    return Math.ceil(path.length / 2);
+    return {
+        nodes,
+        start
+    };
 }
 
-function part2(lines) {
-    const nodes = {};
-    const ground = [];
-    let start;
-    for(let y=0; y<lines.length; y++) {
-        for (let x=0; x<lines[y].length; x++) {
-            const c = lines[y][x];
-            const here = JSON.stringify([x, y]);
-            const north = JSON.stringify([x, y-1]);
-            const east = JSON.stringify([x+1, y]);
-            const south = JSON.stringify([x, y+1]);
-            const west = JSON.stringify([x-1, y]);
-
-            if (c === '.') {
-                ground.push([x, y]);
-            } else if (c === 'S') {
-                start = here;
-            } else if (c === '-') {
-                nodes[here] = [
-                    west,
-                    east
-                ];
-            } else if (c === '|') {
-                nodes[here] = [
-                    north,
-                    south
-                ];
-            } else if (c === 'L') {
-                nodes[here] = [
-                    north,
-                    east
-                ];
-            } else if (c === 'J') {
-                nodes[here] = [
-                    north,
-                    west
-                ];
-            } else if (c === '7') {
-                nodes[here] = [
-                    south,
-                    west
-                ];
-            } else if (c === 'F') {
-                nodes[here] = [
-                    south,
-                    east
-                ];
-            }
-        }
-    }
-
-    const adjacent = Object.getOwnPropertyNames(nodes).filter(k => {
-        return nodes[k].find(n => n === start);
-    });
-    log(adjacent);
-
-    nodes[start] = adjacent;
-
-    log(start);
-    log(nodes);
-    log(ground);
-
+function getPath(nodes, start) {
     const path = [];
     let previous;
     let current = start;
@@ -175,40 +100,15 @@ function part2(lines) {
         if (current === start) {
             break;
         }
-        log(path);
     }
 
-    Object.getOwnPropertyNames(nodes).forEach(n => {
-        if (path.indexOf(n) === -1) {
-            delete nodes[n];
-        }
-    });
+    return path;
+}
 
-    const isInside = ([x, y]) => {
-        let line = lines[y];
-        line = line.split('').map((c, i) => {
-            if (c === 'S') {
-                return '-';
-            }
-            if (!nodes[JSON.stringify([i,y])]) {
-                return '.';
-            }
-            return c;
-        }).join('');
-        // for(let i=0; i<line.length; i++) {
-        //     if (!nodes[JSON.stringify([i,y])]) {
-        //         line = line.slice(0,i) + '.' + line.slice(i+1);
-        //     }
-        // }
-        let s = line.substring(0,x);
-        let walls = s.match(/(\|)|(L-*7)|(F-*J)/g);
-        if (!walls) return false;
-        return walls.length % 2 === 1;
-    };
-
-    // log(lines.join('\n'));
-    // log('');
-
+/**
+ * Returns a pretty representation of the given lines.
+ */
+function pretty(lines) {
     const m = {
         '-': '─',
         '|': '│',
@@ -222,49 +122,127 @@ function part2(lines) {
         'S': 'S'
     };
 
-    const strippedLines = lines.map((line, y) => {
-        return line.split('').map((c, x) => nodes[JSON.stringify([x,y])] ? m[c] : '.').join('');
-    });
+    return lines.map((line, y) => {
+        return line.split('').map((c, x) => m[c]).join('');
+    }).join('\n');
+}
 
-    const fs = require('fs');
-    fs.writeFileSync('stripped.txt', strippedLines.join('\n'));
+function part1(lines) {
+    const { nodes, start } = parse(lines);
 
-    // for(let y=0; y<lines.length; y++) {
-    //     for (let x=0; x<lines[y].length; x++) {
-    //         if (!nodes[JSON.stringify([x,y])]) {
-    //             lines[y] = `${lines[y].slice(0,x)}.${lines[y].slice(x+1)}`;
-    //         }
-    //     }
-    // }
+    const path = getPath(nodes, start);
 
-    // log(lines.join('\n'));
-    // log('');
+    return Math.ceil(path.length / 2);
+}
 
-    let insideCount = 0;
-    const mappedLines = [];
-    for(let y=0; y<lines.length; y++) {
-        let l = '';
-        for(let x=0; x<lines[y].length; x++) {
-            const isLoopWall = !!nodes[JSON.stringify([x,y])];
-            const isGround = !isLoopWall;
-            const inside = isGround && isInside([x, y]);
+const getCoords = (key) => key.split(/[,\[\]]/).filter(x => x).map(Number);
 
-            if (inside) {
-                insideCount++;
-                l += 'I';
-            } else if (isGround) {
-                l += 'O';
-            } else if (isLoopWall) {
-                l += lines[y][x];
-            } else {
-                l += '.';
-            }
-        }
-        log(l);
-        mappedLines.push(l.split('').map(c => m[c]).join(''));
+function getStartSymbol(start, nodes) {
+    const [sx, sy] = getCoords(start);
+    const [[lx, ly], [rx, ry]] = nodes[start].map(getCoords);
+    const west = lx < sx || rx < sx;
+    const east = lx > sx || rx > sx;
+    const north = ly < sy || ry < sy;
+    const south = ly > sy || ry > sy;
+    let c;
+    if (east && west) {
+        c === '-'
+    } else if (north && south) {
+        c = '|';
+    } else if (north && east) {
+        c = 'L';
+    } else if (north && west) {
+        c = 'J';
+    } else if (south && west) {
+        c = '7';
+    } else if (south && east) {
+        c = 'F';
+    } else {
+        throw new Error("Couldn't calculate start symbol");
     }
 
-    fs.writeFileSync('mapped.txt',mappedLines.join('\n'));
+    return c;
+}
+
+
+function part2(lines) {
+    const { nodes, start } = parse(lines);
+
+    const path = getPath(nodes, start);
+
+    // Remove all nodes not part of the main loop
+    Object.getOwnPropertyNames(nodes).forEach(n => {
+        if (path.indexOf(n) === -1) {
+            delete nodes[n];
+        }
+    });
+
+    // Replace the S with the appropriate symbol
+    const startSymbol = getStartSymbol(start, nodes);
+    const [sx, sy] = getCoords(start);
+
+    // Remove pipes that aren't part of loop
+    // and replace start symbol
+    lines = lines.map((l,y) => {
+        return l.split('').map((c,x) => {
+            if (y === sy && x === sx) {
+                return startSymbol;
+            }
+
+            if (nodes[JSON.stringify([x,y])]) {
+                return c;
+            }
+            
+            return '.';
+        }).join('');
+    });
+
+    /**
+     * Determines whet the given coordinates are inside the main loop.
+     */
+    const isInside = ([x, y]) => {
+        // Pick the shorter of the line before or after the coords.
+        // (Small optimisation)
+        let s = x < (lines[y].length / 2) ?
+            lines[y].substring(0,x) :
+            lines[y].substring(x+1);
+
+        // Find all the 'walls' between this position and the end of the line.
+        // Note - walls are indicated by the following strings::
+        //  |,
+        //  L7, L-7, L--7, ...,
+        //  FJ, F-J, F--J, ...
+        let walls = s.match(/(\|)|(L-*7)|(F-*J)/g);
+
+        // We can assume we are inside if there are an odd number of walls
+        return walls && walls.length % 2 === 1;
+    };
+
+    log(pretty(lines));
+
+    // Mark each 'inside' position
+    let insideCount = 0;
+    for(let y=0; y<lines.length; y++) {
+        let l = lines[y].split('');
+
+        // Note - the first and last position cannot be inside
+        for (let x=1; x<l.length-1; x++) {
+            const isLoopWall = !!nodes[JSON.stringify([x,y])];
+
+            if (isLoopWall) {
+                continue;
+            }
+
+            // Note - we can assume inside if adjacent to an inside space
+            if (l[x-1] === 'I' || isInside([x, y])) {
+                l[x] = 'I';
+                insideCount++;
+            }
+        }
+        lines[y] = l.join('');
+    }
+
+    console.log(pretty(lines));
 
     return insideCount;
 }
