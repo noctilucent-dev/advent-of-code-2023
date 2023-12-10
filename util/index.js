@@ -1,6 +1,8 @@
 const fs = require("fs");
 
-let raw = fs.readFileSync("input.txt", "utf8").toString();
+const getRaw = () => fs.readFileSync("input.txt", "utf8").toString();
+
+const toTrimmedLines = (raw) => raw.trim().split('\n').map(l => l.trim());
 
 // set true to use sample data and draw map
 let DEBUG = !!process.env.DEBUG;
@@ -85,7 +87,8 @@ function lcm(...numbers) {
 
 module.exports = {
     constrain,
-    raw,
+    getRaw,
+    toTrimmedLines,
     DEBUG,
     log,
     deepClone,
