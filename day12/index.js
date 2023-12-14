@@ -33,7 +33,12 @@ function swapChar(str, i, c) {
     return str.substring(0, i) + c + str.substring(i+1);
 }
 
+const c = {};
+
 function solve(map, groups, depth=0, m='') {
+    const key = `${map},[${groups}]`;
+    if (c[key] !== undefined) return c[key]
+
     const prefix = '                   '.substring(0, (depth*2) + 1);
     log(`${prefix}Checking '${map}' with groups [${groups}]`);
     map = trim(map);
@@ -42,13 +47,16 @@ function solve(map, groups, depth=0, m='') {
         if (map.indexOf('#') === -1) {
             log(`${prefix}Valid`);
             log(m);
+            c[key] = 1;
             return 1;
         } else {
             log(`${prefix}Invalid`);
+            c[key] = 0;
             return 0;
         }
     } else if (map.length === 0) {
         log(`${prefix}Invalid`);
+        c[key] = 0;
         return 0;
     }
 
@@ -56,6 +64,7 @@ function solve(map, groups, depth=0, m='') {
     while(true) {
         if (map.length < groups[0]) {
             log(`${prefix}Returning ${options}`);
+            c[key] = options;
             return options;
         }
 
@@ -71,6 +80,7 @@ function solve(map, groups, depth=0, m='') {
                 continue;
             } else {
             log(`${prefix}Returning ${options}`);
+            c[key] = options;
             return options;
             }
         }
@@ -84,6 +94,7 @@ function solve(map, groups, depth=0, m='') {
 
         if(map[0] === '#') {
             log(`${prefix}Returning ${options}`);
+            c[key] = options;
             return options;
         }
         
@@ -115,10 +126,22 @@ function solve(map, groups, depth=0, m='') {
 
 function part1(lines) {
     return lines.map(parse).map(({map, groups}, i) => {
-        if (i === 5 || true)
-            return solve(map, groups);
-        else
-            return 0;
+        return solve(map, groups);
+    })
+    .reduce((p,c) => p+c);
+}
+
+function part2(lines) {
+    return lines.map(parse).map(({map, groups}, i) => {
+        map = `${map}?${map}?${map}?${map}?${map}`;
+        groups = [
+            ...groups,
+            ...groups,
+            ...groups,
+            ...groups,
+            ...groups
+        ];
+        return solve(map, groups);
     })
     .reduce((p,c) => p+c);
 }
@@ -126,3 +149,4 @@ function part1(lines) {
 const lines = toTrimmedLines(raw);
 
 console.log(part1(lines));
+console.log(part2(lines));
