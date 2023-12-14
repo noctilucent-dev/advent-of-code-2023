@@ -35,7 +35,7 @@ function swapChar(str, i, c) {
 
 const c = {};
 
-function solve(map, groups, depth=0, m='') {
+function solve(map, groups, depth=0) {
     const key = `${map},[${groups}]`;
     if (c[key] !== undefined) return c[key]
 
@@ -46,7 +46,6 @@ function solve(map, groups, depth=0, m='') {
     if (groups.length === 0) {
         if (map.indexOf('#') === -1) {
             log(`${prefix}Valid`);
-            log(m);
             c[key] = 1;
             return 1;
         } else {
@@ -61,6 +60,7 @@ function solve(map, groups, depth=0, m='') {
     }
 
     let options = 0;
+
     while(true) {
         if (map.length < groups[0]) {
             log(`${prefix}Returning ${options}`);
@@ -76,20 +76,16 @@ function solve(map, groups, depth=0, m='') {
             if (firstSpring === -1 || firstSpring > mapGroupLen) {
                 log(`${prefix}Skipping ${mapGroupLen+1}`);
                 map = map.substring(mapGroupLen+1);
-                m += '..............'.substring(0,mapGroupLen+1);
                 continue;
             } else {
-            log(`${prefix}Returning ${options}`);
-            c[key] = options;
-            return options;
+                log(`${prefix}Returning ${options}`);
+                c[key] = options;
+                return options;
             }
         }
 
         if (map[groups[0]] !== '#') {
-            const g = '###########'.substring(0,groups[0]);
-            options += solve(map.substring(groups[0] + 1), groups.slice(1),depth+1, `${m}${g}.`);
-        } else {
-            log(`${prefix}Skipping`);
+            options += solve(map.substring(groups[0] + 1), groups.slice(1),depth+1);
         }
 
         if(map[0] === '#') {
@@ -99,29 +95,7 @@ function solve(map, groups, depth=0, m='') {
         }
         
         map = map.substring(1);
-        m += '.';
     }
-    // if (mapGroup.minLength > groups[0]) {
-    //         log(`${prefix}Invalid`);
-    //         return 0;
-    // }
-
-    // const firstSpring = mapGroup.s.indexOf('#');
-    // let initialWildcards = 0;
-    // if (firstSpring > -1) {
-    //     initialWildcards = firstSpring;
-    // } else {
-    //     initialWildcards = mapGroup.s.length;
-    // }
-
-    // let options = 0;
-    // for(let offset=0; offset<=initialWildcards && groups[0] + offset <= mapGroup.maxLength; offset++) {
-    //     let newMap = map.substring(offset + groups[0] + 1);
-    //     options += solve(newMap, groups.slice(1), depth+1);
-    // }
-
-    // log(`${prefix}Returning ${options}`);
-    // return options;
 }
 
 function part1(lines) {
