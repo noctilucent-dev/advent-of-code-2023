@@ -17,3 +17,4 @@ touch input.txt
 cp ../util/template.js ./index.js
 
 echo "Done"
+echo "https://adventofcode.com/2023/day/$day"

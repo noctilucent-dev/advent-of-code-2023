@@ -2,9 +2,11 @@
 
 My solutions to the Advent of Code 2023 puzzles:
 https://adventofcode.com/2023
+
 ## Prerequisites
 
-- Node (tested with v18)
+- Node (tested with v20)
+- Or use devcontainer
 
 ## Instructions for running
 
