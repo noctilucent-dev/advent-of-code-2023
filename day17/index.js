@@ -16,21 +16,27 @@ if (DEBUG) {
     2546548887735
     4322674655533`;
 
-    raw = `
-    1111119911111
-    1111119911111
-    1111111111111
-    1111119911111
-    1111119911111`;
+    // raw = `
+    // 1111119911111
+    // 1111119911111
+    // 1111111111111
+    // 1111119911111
+    // 1111119911111`;
 
-    raw = `
-    11119911
-    11111111
-    11119911`
+    // raw = `
+    // 11119911
+    // 11111111
+    // 11119911`
+
+    // raw = `111111111111
+    // 999999999991
+    // 999999999991
+    // 999999999991
+    // 999999999991`;
 }
 
 class Node {
-    constructor(x, y, dx, dy, cost, straights, parent, map) {
+    constructor(x, y, dx, dy, cost, straights, parent, map, part = 1) {
         this.x = x;
         this.y = y;
         this.dx = dx;
@@ -39,13 +45,23 @@ class Node {
         this.straights = straights;
         this.parent = parent;
         this.map = map;
-        this.estimate = cost + Node.heuristic([x, y], map)
+        this.part = part;
+        this.estimate = cost + this.heuristic([x, y], map);
     }
 
-    static heuristic([x, y], map) {
-        const dy = map.length - y - 1;
-        const dx = map[0].length - x - 1;
-        return dx + dy;
+    heuristic([x, y], map) {
+        if (this.part === 1) {
+            const dy = map.length - y - 1;
+            const dx = map[0].length - x - 1;
+            return dx + dy;
+        } else {
+            throw new Error('Not implemented');
+            let minStraight = 4 - this.straights;
+            let nCost = this.cost;
+            if (minStraight > 0) {
+
+            }
+        }
     }
 
     print() {
@@ -147,6 +163,90 @@ function part1(lines) {
     return findPath(map);
 }
 
+
+function findPath2(map) {
+    const vectors = [
+        [1, 0],  // East
+        [0, 1],  // South
+        [-1, 0], // West
+        [0, -1]  // North
+    ];
+
+    const maxX = map[0].length - 1;
+    const maxY = map.length - 1;
+    const hash = ([x, y]) => x*(maxX+1) + y;
+
+    const start = new Node(0, 0, 0, 0, 0, 0, undefined, map);
+    const leaves =[start];
+    const visited = {};
+    visited[hash([0,0])] = new Set([start]);
+
+    while (leaves.length > 0) {
+        const best = leaves.pop();
+        const { x, y, dx, dy, straights, cost } = best;
+        if (x === maxX && y === maxY && straights >= 3) {
+            log('Found best');
+            console.log(best.print());
+
+            return best.cost;
+        }
+        const key = hash([x, y]);
+        if (DEBUG) {
+            log(best.print());
+            log('');
+        }
+
+        let options = vectors;
+
+        if (straights < 3 && !(x === 0 && y === 0)) {
+            options = [[dx, dy]];
+        }
+
+        options
+            .filter(([vx, vy]) => vx !== -dx || vy !== -dy) // reciprical
+            .filter(([vx, vy]) => straights < 9 || vx !== dx || vy !== dy) // > 10 straights
+            .filter(([vx, vy]) => vx+x >=0 && vx+x <= maxX && vy+y >=0 && vy+y <= maxY) // out of bounds
+            .forEach(([vx, vy]) => {
+                const nx = x+vx;
+                const ny = y+vy;
+                const nKey = hash([nx, ny]);
+                const nCost = cost + map[ny][nx];
+                const nStraights = ((vx === dx && vy === dy) ? straights + 1 : 0);
+                const n = new Node(nx, ny, vx, vy, cost + map[ny][nx], nStraights, best, map);
+                if (visited[nKey]) {
+                    const better = Array.from(visited[nKey]).filter(p => 
+                        p.cost <= nCost && 
+                        p.straights === nStraights &&
+                        p.dx === vx &&
+                        p.dy === vy
+                        );
+                    if (better.length > 0) {
+                        // do nothing
+                    } else {
+                        const worse = Array.from(visited[nKey]).filter(p => p.cost > nCost && p.straights >= nStraights);
+                        worse.forEach(p => visited[nKey].delete(p));
+                        visited[nKey].add(n);
+                        leaves.push(n);
+                    }
+                } else {
+                    visited[nKey] = new Set([n]);
+                    leaves.push(n);
+                }
+            });
+
+        leaves.sort((a, b) => b.estimate - a.estimate);
+    }
+
+    throw new Error('Could not find path to end');
+}
+
+function part2(lines) {
+    const map = lines.map(l => l.split('').map(Number));
+
+    return findPath2(map);
+}
+
 const lines = toTrimmedLines(raw);
 
 console.log(part1(lines));
+console.log(part2(lines));
