@@ -21,7 +21,7 @@ if (DEBUG) {
     // R 3 #
     // U 3 #
     // L 3 #
-    // D 3 #`
+    // D 3 #`;
 }
 
 function parse(line) {
@@ -46,21 +46,17 @@ function print(map, minX, minY, maxX, maxY) {
 }
 
 function calculateArea(vertices, minX, minY) {
-    const transposed = vertices.map(([x,y]) => [x-minX,y-minY]);
-    
+    // Use the shoelace formula to calculate the area of the polyon
     let area = 0;
     let circumference = 0;
-    for(let i=0, j=transposed.length-1; i<transposed.length; j=i++) {
-        area += (transposed[j][0] + transposed[i][0]) * (transposed[j][1] - transposed[i][1]);
-        circumference += Math.abs(transposed[j][0]-transposed[i][0]) + Math.abs(transposed[j][1] - transposed[i][1]);
-
-        // area += jx * (ky-iy) + jy * (ix - kx);
-
-        // area += ix * jy;
-        // area -= iy * jx;
+    for(let i=0, j=vertices.length-1; i<vertices.length; j=i++) {
+        area += (vertices[j][0] + vertices[i][0]) * (vertices[j][1] - vertices[i][1]);
+        circumference += Math.abs(vertices[j][0]-vertices[i][0]) + Math.abs(vertices[j][1] - vertices[i][1]);
     }
+    // Note - area will be negative it vertices are anti-clockwise
     area = Math.abs(area) / 2;
 
+    // Compensate for the 'width' of the vertices
     area += (circumference / 2) + 1;
 
     return area;
@@ -108,6 +104,45 @@ function part1(lines) {
     return calculateArea(vertices, minX, minY);
 }
 
+function part2(lines) {
+    lines = lines.map(l => {
+        const [_, __, hex] = l.split(' ');
+        const dist = parseInt(hex.substring(2,7),16);
+        const dir = ['R','D','L','U'][Number(hex.substring(7,8))];
+        return {
+            dist,
+            dir
+        };
+    });
+    log(lines);
+
+    let x = 0;
+    let y = 0;
+    let minX = 0;
+    let minY = 0;
+    let vertices = [[0,0]];
+
+    lines.forEach(({dir, dist}) => {
+        const vectors = {
+            'R': [1, 0],
+            'L': [-1,0],
+            'U': [0,-1],
+            'D': [0,1]
+        };
+
+        const [dx, dy] = vectors[dir];
+        x += (dx * dist);
+        y += (dy * dist);
+        minX = Math.min(x, minX);
+        minY = Math.min(y, minY);
+
+        vertices.push([x,y]);
+    });
+
+    return calculateArea(vertices, minX, minY);
+}
+
 const lines = toTrimmedLines(raw);
 
 console.log(part1(lines));
+console.log(part2(lines));
